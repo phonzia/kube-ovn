@@ -340,6 +340,12 @@ type VpcSpec struct {
 	Namespaces   []string       `json:"namespaces,omitempty"`
 	StaticRoutes []*StaticRoute `json:"staticRoutes,omitempty"`
 	PolicyRoutes []*PolicyRoute `json:"policyRoutes,omitempty"`
+	VpcPeerings  []*VpcPeering  `json:"vpcPeerings,omitempty"`
+}
+
+type VpcPeering struct {
+	RemoteVpc      string `json:"remoteVpc,omitempty"`
+	LocalConnectIP string `json:"localConnectIP,omitempty"`
 }
 
 type RoutePolicy string
@@ -388,6 +394,7 @@ type VpcStatus struct {
 	TcpSessionLoadBalancer string   `json:"tcpSessionLoadBalancer"`
 	UdpSessionLoadBalancer string   `json:"udpSessionLoadBalancer"`
 	Subnets                []string `json:"subnets"`
+	VpcPeerings            []string `json:"vpcPeerings"`
 }
 
 // Condition describes the state of an object at a certain point.

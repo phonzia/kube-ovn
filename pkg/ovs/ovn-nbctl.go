@@ -238,7 +238,7 @@ func (c Client) ListVirtualPort(ls string) ([]string, error) {
 }
 
 // CreatePort create logical switch port in ovn
-func (c Client) CreatePort(ls, port, ip, mac, pod, namespace string, portSecurity bool, securityGroups string, vips string, liveMigration bool) error {
+func (c Client) CreatePort(ls, port, ip, mac, pod, namespace string, portSecurity bool, securityGroups string, vips string, liveMigration bool, enableDHCP bool, dhcpOptions *DHCPOptionsUUIDs) error {
 	var ovnCommand []string
 	var addresses []string
 	addresses = append(addresses, mac)
@@ -303,6 +303,17 @@ func (c Client) CreatePort(ls, port, ip, mac, pod, namespace string, portSecurit
 	} else {
 		ovnCommand = append(ovnCommand,
 			"--", "set", "logical_switch_port", port, fmt.Sprintf("external_ids:vendor=%s", util.CniTypeName))
+	}
+
+	if enableDHCP && dhcpOptions != nil {
+		if len(dhcpOptions.DHCPv4OptionsUUID) != 0 {
+			ovnCommand = append(ovnCommand,
+				"--", "lsp-set-dhcpv4-options", port, dhcpOptions.DHCPv4OptionsUUID)
+		}
+		if len(dhcpOptions.DHCPv6OptionsUUID) != 0 {
+			ovnCommand = append(ovnCommand,
+				"--", "lsp-set-dhcpv6-options", port, dhcpOptions.DHCPv6OptionsUUID)
+		}
 	}
 
 	if _, err := c.ovnNbCommand(ovnCommand...); err != nil {

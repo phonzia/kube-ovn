@@ -515,6 +515,10 @@ spec:
                   type: number
                 activateGateway:
                   type: string
+                dhcpV4OptionsUUID:
+                  type: string
+                dhcpV6OptionsUUID:
+                  type: string
                 conditions:
                   type: array
                   items:

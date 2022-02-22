@@ -538,9 +538,12 @@ func (c *Controller) handleAddPod(key string) error {
 					break
 				}
 			}
-
-			portName := ovs.PodNameToPortName(podName, namespace, podNet.ProviderName)
-			if err := c.ovnClient.CreatePort(subnet.Name, portName, ipStr, mac, podName, pod.Namespace, portSecurity, securityGroupAnnotation, vips, podNet.AllowLiveMigration); err != nil {
+			portName := ovs.PodNameToPortName(name, namespace, podNet.ProviderName)
+			dhcpOptions := &ovs.DHCPOptionsUUIDs{
+				DHCPv4OptionsUUID: subnet.Status.DHCPv4OptionsUUID,
+				DHCPv6OptionsUUID: subnet.Status.DHCPv6OptionsUUID,
+			}
+			if err := c.ovnClient.CreatePort(subnet.Name, portName, ipStr, mac, pod.Name, pod.Namespace, portSecurity, securityGroupAnnotation, vips, podNet.AllowLiveMigration, podNet.Subnet.Spec.EnableDHCP, dhcpOptions); err != nil {
 				c.recorder.Eventf(pod, v1.EventTypeWarning, "CreateOVNPortFailed", err.Error())
 				return err
 			}

@@ -140,6 +140,10 @@ spec:
                   type: number
                 activateGateway:
                   type: string
+                dhcpV4OptionsUUID:
+                  type: string
+                dhcpV6OptionsUUID:
+                  type: string
                 conditions:
                   type: array
                   items:
@@ -220,6 +224,7 @@ spec:
                   type: boolean
                 disableInterConnection:
                   type: boolean
+<<<<<<< HEAD
                 htbqos:
                   type: string
                 acls:
@@ -246,6 +251,16 @@ spec:
                           - allow
                           - drop
                           - reject
+                enableDHCP:
+                  type: boolean
+                dhcpV4Options:
+                  type: string
+                dhcpV6Options:
+                  type: string
+                enableIPv6RA:
+                  type: boolean
+                ipv6RAConfigs:
+                  type: string
   scope: Cluster
   names:
     plural: subnets

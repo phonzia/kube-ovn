@@ -636,6 +636,35 @@ func (c *Controller) handleAddOrUpdateSubnet(key string) error {
 		}
 	}
 
+	var dhcpOptionsUUIDs *ovs.DHCPOptionsUUIDs
+	dhcpOptionsUUIDs, err = c.ovnClient.UpdateDHCPOptions(subnet.Name, subnet.Spec.CIDRBlock, subnet.Spec.Gateway, subnet.Spec.DHCPv4Options, subnet.Spec.DHCPv6Options, subnet.Spec.EnableDHCP)
+	if err != nil {
+		klog.Errorf("failed to update dhcp options for switch %s, %v", subnet.Name, err)
+		return err
+	}
+
+	if needRouter {
+		if err := c.ovnClient.UpdateRouterPortIPv6RA(subnet.Name, vpc.Status.Router, subnet.Spec.CIDRBlock, subnet.Spec.Gateway, subnet.Spec.IPv6RAConfigs, subnet.Spec.EnableIPv6RA); err != nil {
+			klog.Errorf("failed to update ipv6 ra configs for router port %s-%s, %v", vpc.Status.Router, subnet.Name, err)
+			return err
+		}
+	}
+
+	if subnet.Status.DHCPv4OptionsUUID != dhcpOptionsUUIDs.DHCPv4OptionsUUID || subnet.Status.DHCPv6OptionsUUID != dhcpOptionsUUIDs.DHCPv6OptionsUUID {
+		subnet.Status.DHCPv4OptionsUUID = dhcpOptionsUUIDs.DHCPv4OptionsUUID
+		subnet.Status.DHCPv6OptionsUUID = dhcpOptionsUUIDs.DHCPv6OptionsUUID
+		bytes, err := subnet.Status.Bytes()
+		if err != nil {
+			klog.Error(err)
+			return err
+		} else {
+			if _, err := c.config.KubeOvnClient.KubeovnV1().Subnets().Patch(context.Background(), subnet.Name, types.MergePatchType, bytes, metav1.PatchOptions{}, "status"); err != nil {
+				klog.Error("patch subnet %s dhcp options failed: %v", subnet.Name, err)
+				return err
+			}
+		}
+	}
+
 	if err = c.updateNodeAddressSetsForSubnet(subnet, false); err != nil {
 		klog.Errorf("failed to update node address sets for addition of subnet %s: %v", subnet.Name, err)
 		return err
@@ -763,6 +792,11 @@ func (c *Controller) handleDeleteLogicalSwitch(key string) (err error) {
 
 	if err = c.ovnClient.CleanLogicalSwitchAcl(key); err != nil {
 		klog.Errorf("failed to delete acl of logical switch %s %v", key, err)
+		return err
+	}
+
+	if err = c.ovnClient.DeleteDHCPOptions(key, kubeovnv1.ProtocolDual); err != nil {
+		klog.Errorf("failed to delete dhcp options of logical switch %s %v", key, err)
 		return err
 	}
 

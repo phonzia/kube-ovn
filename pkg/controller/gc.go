@@ -299,6 +299,8 @@ func (c *Controller) markAndCleanLSP() error {
 			if !lastNoPodLSP[lsp] {
 				noPodLSP[lsp] = true
 			} else {
+				nameNsMap := c.ovnClient.GetLspExternalIds(lsp)
+
 				klog.Infof("gc logical switch port %s", lsp)
 				if err := c.ovnClient.DeleteLogicalSwitchPort(lsp); err != nil {
 					klog.Errorf("failed to delete lsp %s, %v", lsp, err)
@@ -309,6 +311,11 @@ func (c *Controller) markAndCleanLSP() error {
 						klog.Errorf("failed to delete ip %s, %v", lsp, err)
 						return err
 					}
+				}
+
+				for podName, nsName := range nameNsMap {
+					key := fmt.Sprintf("%s/%s", nsName, podName)
+					c.ipam.ReleaseAddressByPod(key)
 				}
 			}
 		}

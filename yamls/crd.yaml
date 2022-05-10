@@ -224,7 +224,6 @@ spec:
                   type: boolean
                 disableInterConnection:
                   type: boolean
-<<<<<<< HEAD
                 htbqos:
                   type: string
                 acls:

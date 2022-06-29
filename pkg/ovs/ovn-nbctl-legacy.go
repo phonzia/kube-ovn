@@ -935,6 +935,14 @@ func (c LegacyClient) AddStaticRoute(policy, cidr, nextHop, router string, route
 
 // AddPolicyRoute add a policy route rule in ovn
 func (c LegacyClient) AddPolicyRoute(router string, priority int32, match, action, nextHop string, externalIDs map[string]string) error {
+	ovnVersion, err := c.GetVersion()
+	if err != nil {
+		return fmt.Errorf("fieled to get ovn version, %v", err)
+	}
+	if util.CompareVersion(ovnVersion, "21.03") < 0 && strings.Contains(nextHop, ",") {
+		return fmt.Errorf("ECMP is not supported for router policy by OVN %s", ovnVersion)
+	}
+
 	consistent, err := c.CheckPolicyRouteNexthopConsistent(router, match, nextHop, priority)
 	if err != nil {
 		return err
@@ -1016,10 +1024,19 @@ func (c LegacyClient) IsPolicyRouteExist(router string, priority int32, match st
 }
 
 func (c LegacyClient) DeletePolicyRouteByNexthop(router string, priority int32, nexthop string) error {
+	ovnVersion, err := c.GetVersion()
+	if err != nil {
+		return fmt.Errorf("fieled to get ovn version, %v", err)
+	}
+	nexthopField := "nexthops"
+	if util.CompareVersion(ovnVersion, "21.03") < 0 {
+		nexthopField = "nexthop"
+	}
+
 	args := []string{
 		"--no-heading", "--data=bare", "--columns=match", "find", "Logical_Router_Policy",
 		fmt.Sprintf("priority=%d", priority),
-		fmt.Sprintf(`nexthops{=}%s`, strings.ReplaceAll(nexthop, ":", `\:`)),
+		fmt.Sprintf(`%s{=}%s`, nexthopField, strings.ReplaceAll(nexthop, ":", `\:`)),
 	}
 	output, err := c.ovnNbCommand(args...)
 	if err != nil {
@@ -2257,7 +2274,15 @@ func (c *LegacyClient) PolicyRouteExists(priority int32, match string) (bool, er
 }
 
 func (c *LegacyClient) GetPolicyRouteParas(priority int32, match string) ([]string, map[string]string, error) {
-	result, err := c.CustomFindEntity("Logical_Router_Policy", []string{"nexthops", "external_ids"}, fmt.Sprintf("priority=%d", priority), fmt.Sprintf(`match="%s"`, match))
+	ovnVersion, err := c.GetVersion()
+	if err != nil {
+		return nil, nil, fmt.Errorf("fieled to get ovn version, %v", err)
+	}
+	nexthopField := "nexthops"
+	if util.CompareVersion(ovnVersion, "21.03") < 0 {
+		nexthopField = "nexthop"
+	}
+	result, err := c.CustomFindEntity("Logical_Router_Policy", []string{nexthopField, "external_ids"}, fmt.Sprintf("priority=%d", priority), fmt.Sprintf(`match="%s"`, match))
 	if err != nil {
 		klog.Errorf("customFindEntity failed, %v", err)
 		return nil, nil, err
@@ -2280,7 +2305,7 @@ func (c *LegacyClient) GetPolicyRouteParas(priority int32, match string) ([]stri
 		nameIpMap[name] = ip
 	}
 
-	return result[0]["nexthops"], nameIpMap, nil
+	return result[0][nexthopField], nameIpMap, nil
 }
 
 func (c LegacyClient) SetPolicyRouteExternalIds(priority int32, match string, nameIpMaps map[string]string) error {

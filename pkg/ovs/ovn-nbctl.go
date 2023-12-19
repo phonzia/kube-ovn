@@ -2508,8 +2508,6 @@ func (c *LegacyClient) updateDHCPv4Options(ls, v4CIDR, v4Gateway, dhcpV4OptionsS
 		return "", err
 	}
 
-	klog.Infof("list dhcp options for switch %s: %+v ", ls, dhcpV4Options)
-
 	if len(v4CIDR) > 0 {
 		if len(dhcpV4Options) == 0 {
 			// create

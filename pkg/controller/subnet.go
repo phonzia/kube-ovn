@@ -765,13 +765,11 @@ func (c *Controller) handleAddOrUpdateSubnet(key string) error {
 	if dhcpOptionsUUIDs2.DHCPv4OptionsUUID != "" {
 		dhcpV4Options += "," + dhcpOptionsUUIDs2.DHCPv4OptionsUUID
 	}
-	klog.Infof("dhcpV4 options: %v", dhcpV4Options)
 
 	dhcpV6Options := dhcpOptionsUUIDs.DHCPv6OptionsUUID
 	if dhcpOptionsUUIDs2.DHCPv6OptionsUUID != "" {
 		dhcpV6Options += "," + dhcpOptionsUUIDs2.DHCPv6OptionsUUID
 	}
-	klog.Infof("dhcpV6 options: %v", dhcpV6Options)
 
 	if subnet.Status.DHCPv4OptionsUUID != dhcpV4Options || subnet.Status.DHCPv6OptionsUUID != dhcpV6Options {
 		subnet.Status.DHCPv4OptionsUUID = dhcpV4Options

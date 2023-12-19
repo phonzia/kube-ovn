@@ -960,7 +960,6 @@ func (c *Controller) handleUpdatePodIPAddress(key string) error {
 		}
 
 		isDefaultRoute := pod.Annotations[fmt.Sprintf(util.DefaultRouteAnnotationTemplate, podNet.ProviderName)] == "true"
-		klog.Infof("%s/%s provider:%s, isDefaultRoute:%d", namespace, name, podNet.ProviderName, isDefaultRoute)
 
 		// validate dhcp option
 		var dhcpOptions *ovs.DHCPOptionsUUIDs

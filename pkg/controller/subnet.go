@@ -772,6 +772,10 @@ func (c *Controller) handleAddOrUpdateSubnet(key string) error {
 	}
 
 	if subnet.Status.DHCPv4OptionsUUID != dhcpV4Options || subnet.Status.DHCPv6OptionsUUID != dhcpV6Options {
+		enableOp := false
+		if subnet.Status.DHCPv4OptionsUUID == "" {
+			enableOp = true
+		}
 		subnet.Status.DHCPv4OptionsUUID = dhcpV4Options
 		subnet.Status.DHCPv6OptionsUUID = dhcpV6Options
 		bytes, err := subnet.Status.Bytes()
@@ -781,6 +785,13 @@ func (c *Controller) handleAddOrUpdateSubnet(key string) error {
 		} else {
 			if _, err := c.config.KubeOvnClient.KubeovnV1().Subnets().Patch(context.Background(), subnet.Name, types.MergePatchType, bytes, metav1.PatchOptions{}, "status"); err != nil {
 				klog.Error("patch subnet %s dhcp options failed: %v", subnet.Name, err)
+				return err
+			}
+		}
+
+		if enableOp {
+			// update all dhcp options
+			if err := c.enableDHCP(subnet); err != nil {
 				return err
 			}
 		}
@@ -837,6 +848,72 @@ func (c *Controller) handleAddOrUpdateSubnet(key string) error {
 	}
 
 	c.updateVpcStatusQueue.Add(subnet.Spec.Vpc)
+	return nil
+}
+
+func (c *Controller) enableDHCP(subnet *kubeovnv1.Subnet) error {
+	dhcpV4OptionsUUIDs := strings.Split(subnet.Status.DHCPv4OptionsUUID, ",")
+	dhcpV6OptionsUUIDs := strings.Split(subnet.Status.DHCPv6OptionsUUID, ",")
+
+	filter := map[string]string{
+		logicalSwitchKey: subnet.Name,
+	}
+	lsps, err := c.ovnClient.ListLogicalSwitchPorts(true, filter, func(lsp *ovnnb.LogicalSwitchPort) bool {
+		return true
+	})
+
+	if err != nil {
+		return fmt.Errorf("get logical switch ports failed")
+	}
+
+	for _, lsp := range lsps {
+		if key := lsp.ExternalIDs["pod"]; key != "" {
+			podName := strings.Split(key, "/")
+			if len(podName) > 1 {
+				pod, err := c.podsLister.Pods(podName[0]).Get(podName[1])
+				if err != nil {
+					if !k8serrors.IsNotFound(err) {
+						klog.Errorf("get pod %s failed: %v", lsp.Name, err)
+						return err
+					} else {
+						continue
+					}
+				}
+
+				podNets, err := c.getPodKubeovnNets(pod)
+				if err != nil {
+					klog.Errorf("failed to get pod nets %v", err)
+					return err
+				}
+
+				for _, podNet := range podNets {
+					if podNet.Subnet.Name == subnet.Name {
+						isDefaultRoute := pod.Annotations[fmt.Sprintf(util.DefaultRouteAnnotationTemplate, podNet.ProviderName)] == "true"
+						dhcpv4Options := dhcpV4OptionsUUIDs[0]
+						if !isDefaultRoute && len(dhcpV4OptionsUUIDs) > 1 {
+							*lsp.Dhcpv4Options = dhcpV4OptionsUUIDs[1]
+						}
+						if err := c.ovnClient.SetLogicalSwitchPortDHCPOptions(lsp.Name, dhcpv4Options, kubeovnv1.ProtocolIPv4); err != nil {
+							klog.Errorf("set logical switch port DHCP options failed: %v", err)
+							return err
+						}
+
+						dhcpv6Options := dhcpV6OptionsUUIDs[0]
+						if !isDefaultRoute && len(dhcpV6OptionsUUIDs) > 1 {
+							*lsp.Dhcpv6Options = dhcpV6OptionsUUIDs[1]
+						}
+
+						if err := c.ovnClient.SetLogicalSwitchPortDHCPOptions(lsp.Name, dhcpv6Options, kubeovnv1.ProtocolIPv6); err != nil {
+							klog.Errorf("set logical switch port DHCP options failed: %v", err)
+							return err
+						}
+						break
+					}
+				}
+			}
+		}
+	}
+
 	return nil
 }
 

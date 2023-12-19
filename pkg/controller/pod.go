@@ -624,7 +624,6 @@ func (c *Controller) handleAddPod(key string) error {
 		}
 
 		isDefaultRoute := pod.Annotations[fmt.Sprintf(util.DefaultRouteAnnotationTemplate, podNet.ProviderName)] == "true"
-		klog.Infof("%s/%s provider:%s, isDefaultRoute:%d", namespace, name, podNet.ProviderName, isDefaultRoute)
 
 		if err := util.ValidatePodCidr(podNet.Subnet.Spec.CIDRBlock, ipStr); err != nil {
 			klog.Errorf("validate pod %s/%s failed: %v", namespace, name, err)

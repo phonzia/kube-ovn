@@ -663,8 +663,8 @@ func (c *Controller) handleAddPod(key string) error {
 			}
 			portName := ovs.PodNameToPortName(name, namespace, podNet.ProviderName)
 
-			dhcpV4Options := strings.Split(subnet.Status.DHCPv4OptionsUUID, ";")
-			dhcpV6Options := strings.Split(subnet.Status.DHCPv6OptionsUUID, ";")
+			dhcpV4Options := strings.Split(subnet.Status.DHCPv4OptionsUUID, ",")
+			dhcpV6Options := strings.Split(subnet.Status.DHCPv6OptionsUUID, ",")
 
 			dhcpOptions := &ovs.DHCPOptionsUUIDs{
 				DHCPv4OptionsUUID: dhcpV4Options[0],

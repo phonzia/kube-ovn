@@ -94,7 +94,6 @@ func (c *ovnClient) updateDHCPv4Options(lsName, cidr, gateway, options string, n
 		return
 	}
 
-	klog.Infof("get dhcp options ls:%s, cidr:%s, optionStr:[%s], dhcpOpt:%+v", lsName, cidr, options, dhcpOpt)
 	if len(options) == 0 {
 		mac := util.GenerateMac()
 		if dhcpOpt != nil && len(dhcpOpt.Options) != 0 {

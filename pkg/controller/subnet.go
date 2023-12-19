@@ -891,7 +891,7 @@ func (c *Controller) enableDHCP(subnet *kubeovnv1.Subnet) error {
 						isDefaultRoute := pod.Annotations[fmt.Sprintf(util.DefaultRouteAnnotationTemplate, podNet.ProviderName)] == "true"
 						dhcpv4Options := dhcpV4OptionsUUIDs[0]
 						if !isDefaultRoute && len(dhcpV4OptionsUUIDs) > 1 {
-							*lsp.Dhcpv4Options = dhcpV4OptionsUUIDs[1]
+							dhcpv4Options = dhcpV4OptionsUUIDs[1]
 						}
 						if err := c.ovnClient.SetLogicalSwitchPortDHCPOptions(lsp.Name, dhcpv4Options, kubeovnv1.ProtocolIPv4); err != nil {
 							klog.Errorf("set logical switch port DHCP options failed: %v", err)
@@ -900,12 +900,14 @@ func (c *Controller) enableDHCP(subnet *kubeovnv1.Subnet) error {
 
 						dhcpv6Options := dhcpV6OptionsUUIDs[0]
 						if !isDefaultRoute && len(dhcpV6OptionsUUIDs) > 1 {
-							*lsp.Dhcpv6Options = dhcpV6OptionsUUIDs[1]
+							dhcpv6Options = dhcpV6OptionsUUIDs[1]
 						}
 
-						if err := c.ovnClient.SetLogicalSwitchPortDHCPOptions(lsp.Name, dhcpv6Options, kubeovnv1.ProtocolIPv6); err != nil {
-							klog.Errorf("set logical switch port DHCP options failed: %v", err)
-							return err
+						if len(dhcpv6Options) != 0 {
+							if err := c.ovnClient.SetLogicalSwitchPortDHCPOptions(lsp.Name, dhcpv6Options, kubeovnv1.ProtocolIPv6); err != nil {
+								klog.Errorf("set logical switch port DHCP options failed: %v", err)
+								return err
+							}
 						}
 						break
 					}

@@ -733,13 +733,13 @@ func (c *ovnClient) SetLogicalSwitchPortDHCPOptions(lspName string, options stri
 	var op []ovsdb.Operation
 	if protocol == kubeovnv1.ProtocolIPv4 {
 		lsp.Dhcpv4Options = &options
-		op, err = c.UpdateLogicalSwitchPortOp(lsp, lsp.Dhcpv4Options)
+		op, err = c.UpdateLogicalSwitchPortOp(lsp, &lsp.Dhcpv4Options)
 		if err != nil {
 			return err
 		}
 	} else if protocol == kubeovnv1.ProtocolIPv6 {
 		lsp.Dhcpv6Options = &options
-		op, err = c.UpdateLogicalSwitchPortOp(lsp, lsp.Dhcpv6Options)
+		op, err = c.UpdateLogicalSwitchPortOp(lsp, &lsp.Dhcpv6Options)
 		if err != nil {
 			return err
 		}

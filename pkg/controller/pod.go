@@ -965,8 +965,8 @@ func (c *Controller) handleUpdatePodIPAddress(key string) error {
 		// validate dhcp option
 		var dhcpOptions *ovs.DHCPOptionsUUIDs
 		if podNet.Subnet.Spec.EnableDHCP {
-			dhcpV4Options := strings.Split(podNet.Subnet.Status.DHCPv4OptionsUUID, ";")
-			dhcpV6Options := strings.Split(podNet.Subnet.Status.DHCPv6OptionsUUID, ";")
+			dhcpV4Options := strings.Split(podNet.Subnet.Status.DHCPv4OptionsUUID, ",")
+			dhcpV6Options := strings.Split(podNet.Subnet.Status.DHCPv6OptionsUUID, ",")
 			dhcpOptions = &ovs.DHCPOptionsUUIDs{
 				DHCPv4OptionsUUID: dhcpV4Options[0],
 				DHCPv6OptionsUUID: dhcpV6Options[0],

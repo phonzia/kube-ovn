@@ -900,7 +900,11 @@ func (c *Controller) attachExtensionIPv6RA(subnet *kubeovnv1.Subnet) error {
 	}
 
 	// update RA config
-	if err := c.ovnLegacyClient.UpdateRouterPortIPv6RA(subnet.Name, extVpc.Status.Router, subnet.Spec.CIDRBlock, subnet.Spec.Gateway, subnet.Spec.IPv6RAConfigs, subnet.Spec.EnableIPv6RA); err != nil {
+	ipv6RAConfigs := subnet.Spec.IPv6RAConfigs
+	if subnet.Spec.EnableIPv6RA && len(subnet.Spec.IPv6RAConfigs) == 0 {
+		ipv6RAConfigs = "address_mode=dhcpv6_stateful,max_interval=30,min_interval=5,send_periodic=true,router_preference=HIGH"
+	}
+	if err := c.ovnLegacyClient.UpdateRouterPortIPv6RA(subnet.Name, extVpc.Status.Router, subnet.Spec.CIDRBlock, subnet.Spec.Gateway, ipv6RAConfigs, subnet.Spec.EnableIPv6RA); err != nil {
 		klog.Errorf("failed to update ipv6 ra configs for router port %s-%s, %v", extVpc.Status.Router, subnet.Name, err)
 		return err
 	}
